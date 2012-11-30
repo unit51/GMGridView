@@ -1,5 +1,5 @@
 //
-//  GMGridViewCell+Extended.h
+//  UIView+GMGridViewShake.m
 //  GMGridView
 //
 //  Created by Gulam Moledina on 11-10-22.
@@ -26,40 +26,52 @@
 //  THE SOFTWARE.
 //
 
-#import <Foundation/Foundation.h>
-#import "GMGridView-Constants.h"
-#import "GMGridView.h"
-#import "GMGridViewCell.h"
+#import <QuartzCore/QuartzCore.h>
+#import "UIView+GMGridViewAdditions.h"
 
-typedef void (^GMGridViewCellDeleteBlock)(GMGridViewCell*);
+@interface UIView (GMGridViewAdditions_Privates)
 
-//////////////////////////////////////////////////////////////
-#pragma mark -
-#pragma mark Interface GMGridViewCell (Extended)
-//////////////////////////////////////////////////////////////
 
-@interface GMGridViewCell () 
+@end
+
+
+
+
+@implementation UIView (GMGridViewAdditions)
+
+- (void)shakeStatus:(BOOL)enabled
 {
-    
+    if (enabled) 
+    {
+        CGFloat rotation = 0.03;
+        
+        CABasicAnimation *shake = [CABasicAnimation animationWithKeyPath:@"transform"];
+        shake.duration = 0.13;
+        shake.autoreverses = YES;
+        shake.repeatCount  = MAXFLOAT;
+        shake.removedOnCompletion = NO;
+        shake.fromValue = [NSValue valueWithCATransform3D:CATransform3DRotate(self.layer.transform,-rotation, 0.0 ,0.0 ,1.0)];
+        shake.toValue   = [NSValue valueWithCATransform3D:CATransform3DRotate(self.layer.transform, rotation, 0.0 ,0.0 ,1.0)];
+        
+        [self.layer addAnimation:shake forKey:@"shakeAnimation"];
+    }
+    else
+    {
+        [self.layer removeAnimationForKey:@"shakeAnimation"];
+    }
 }
 
-@property (nonatomic, strong) UIView *fullSizeView;
-@property (nonatomic, assign) CGSize fullSize;
-
-@property (nonatomic, readonly, getter=isInShakingMode) BOOL inShakingMode;
-@property (nonatomic, readonly, getter=isInFullSizeMode) BOOL inFullSizeMode;
-
-@property (nonatomic, getter=isEditing) BOOL editing;
-@property (nonatomic, copy) GMGridViewCellDeleteBlock deleteBlock;
-
-@property (nonatomic, assign) UIViewAutoresizing defaultFullsizeViewResizingMask;
-@property (nonatomic, gm_weak) UIButton *deleteButton;
-
-
-- (void)prepareForReuse;
-- (void)shake:(BOOL)on; // shakes the contentView only, not the fullsize one
-
-- (void)switchToFullSizeMode:(BOOL)fullSizeEnabled;
-- (void)stepToFullsizeWithAlpha:(CGFloat)alpha; // not supported yet
-
+- (void)recursiveEnumerateSubviewsUsingBlock:(void (^)(UIView *view, BOOL *stop))block {
+	if (self.subviews.count == 0) {
+		return;
+	}
+	for (UIView *subview in [self subviews]) {
+		BOOL stop = NO;
+		block(subview, &stop);
+		if (stop) {
+			return;
+		}
+		[subview recursiveEnumerateSubviewsUsingBlock:block];
+	}
+}
 @end

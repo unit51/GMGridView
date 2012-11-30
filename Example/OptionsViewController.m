@@ -15,6 +15,7 @@ typedef enum {
     OptionSectionGeneral = 0,
     OptionSectionLayout,
     OptionSectionSorting,
+    OptionSectionGestures,
     OptionSectionDebug,
     
     OptionSectionsCount
@@ -44,6 +45,14 @@ typedef enum {
     OptionSortingCount
 } OptionsTypeSorting;
 
+// Options Gestures
+typedef enum {
+    OptionTypeGesturesEditOnTap = 0,
+    OptionTypeGesturesDisableEditOnEmptySpaceTap,
+    
+    OptionTypeGesturesCount
+} OptionsTypeGestures;
+
 // Options debug
 typedef enum {
     OptionTypeDebugGridBackground = 0,
@@ -62,6 +71,8 @@ typedef enum {
 - (void)layoutCenterSwitchChanged:(UISwitch *)control;
 - (void)layoutSpacingSliderChanged:(UISlider *)control;
 - (void)layoutInsetsSliderChanged:(UISlider *)control;
+- (void)editOnTapSwitchChanged:(UISwitch *)control;
+- (void)disableEditOnEmptySpaceTapSwitchChanged:(UISwitch *)control;
 - (void)debugGridBackgroundSwitchChanged:(UISwitch *)control;
 - (void)debugReloadButtonPressed:(UIButton *)control;
 
@@ -167,6 +178,9 @@ typedef enum {
         case OptionSectionSorting:
             title = @"Sorting";
             break;
+        case OptionSectionGestures:
+            title = @"Gestures";
+            break;
         case OptionSectionDebug:
             title = @"Debug";
             break;
@@ -190,6 +204,9 @@ typedef enum {
         case OptionSectionSorting:
             count = OptionSortingCount;
             break;
+        case OptionSectionGestures:
+            count = OptionTypeGesturesCount;
+            break;
         case OptionSectionDebug:
             count = OptionDebugCount;
             break;
@@ -208,7 +225,14 @@ typedef enum {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:cellIdentifier];
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
     }
-
+    else 
+    {
+        for (UIView* subview in cell.contentView.subviews) {
+            if ([subview isKindOfClass:[UIPickerView class]]) {
+                [subview removeFromSuperview];
+            }
+        }
+    }
     
     if ([indexPath section] == OptionSectionGeneral)
     {
@@ -324,6 +348,36 @@ typedef enum {
             }
         }
     }
+    else if ([indexPath section] == OptionSectionGestures)
+    {
+        switch ([indexPath row]) 
+        {
+            case OptionTypeGesturesEditOnTap:
+            {
+                cell.detailTextLabel.text = @"Edit on Long Tap";
+                
+				UISwitch *editOnTapSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(0, 0, 100, 30)];
+                [editOnTapSwitch addTarget:self action:@selector(editOnTapSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+                editOnTapSwitch.on = self.gridView.enableEditOnLongPress;
+                
+                cell.accessoryView = editOnTapSwitch;
+                
+                break;
+            }
+            case OptionTypeGesturesDisableEditOnEmptySpaceTap:
+            {
+                cell.detailTextLabel.text = @"Disable edit on empty tap";
+                
+				UISwitch *disableEditOnEmptyTapSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(0, 0, 100, 30)];
+                [disableEditOnEmptyTapSwitch addTarget:self action:@selector(disableEditOnEmptySpaceTapSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+                disableEditOnEmptyTapSwitch.on = self.gridView.enableEditOnLongPress;
+                
+                cell.accessoryView = disableEditOnEmptyTapSwitch;
+                
+                break;
+            }
+        }
+    }
     else if ([indexPath section] == OptionSectionDebug)
     {
         switch ([indexPath row]) 
@@ -391,6 +445,7 @@ typedef enum {
             self.gridView.layoutStrategy = [GMGridViewLayoutStrategyFactory strategyFromType:GMGridViewLayoutVertical];
             break;
     }
+    [self.gridView layoutSubviewsWithAnimation:GMGridViewItemAnimationFade];
 }
 
 - (NSInteger)numberOfComponentsInPickerView:(UIPickerView *)pickerView
@@ -436,6 +491,7 @@ typedef enum {
 {
     self.gridView.editing = control.on;
     control.on = self.gridView.isEditing;
+    [self.gridView layoutSubviewsWithAnimation:GMGridViewItemAnimationFade];
 }
 
 - (void)sortStyleSegmentedControlChanged:(UISegmentedControl *)control
@@ -455,16 +511,29 @@ typedef enum {
 - (void)layoutCenterSwitchChanged:(UISwitch *)control
 {
     self.gridView.centerGrid = control.on;
+    [self.gridView layoutSubviewsWithAnimation:GMGridViewItemAnimationFade];
 }
 
 - (void)layoutSpacingSliderChanged:(UISlider *)control
 {
     self.gridView.itemSpacing = control.value;
+    [self.gridView layoutSubviewsWithAnimation:GMGridViewItemAnimationFade];
 }
 
 - (void)layoutInsetsSliderChanged:(UISlider *)control
 {
     self.gridView.minEdgeInsets = UIEdgeInsetsMake(control.value, control.value, control.value, control.value);
+    [self.gridView layoutSubviewsWithAnimation:GMGridViewItemAnimationFade];
+}
+
+- (void)editOnTapSwitchChanged:(UISwitch *)control
+{
+    self.gridView.enableEditOnLongPress = control.on;
+}
+
+- (void)disableEditOnEmptySpaceTapSwitchChanged:(UISwitch *)control;
+{
+    self.gridView.disableEditOnEmptySpaceTap = control.on;
 }
 
 - (void)debugGridBackgroundSwitchChanged:(UISwitch *)control
